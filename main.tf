@@ -104,13 +104,13 @@ resource "aws_lb_target_group" "app" {
 
     enabled = true
 
-    path = "/"
+    path = "/reshma/health"
 
     protocol = "HTTP"
 
     port = "traffic-port"
 
-    matcher = "200"
+    matcher = "200-399"
 
     healthy_threshold = 2
 
