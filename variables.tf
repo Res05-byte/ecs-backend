@@ -18,7 +18,8 @@ variable "app_name" {
 }
 
 variable "container_port" {
-  type = number
+  type        = number
+  description = "Port exposed by the application container and targeted by the ALB."
 }
 
 variable "task_cpu" {
