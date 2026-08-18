@@ -53,5 +53,59 @@ jobs:
       # Terraform Destroy
       ##################################################
 
-      - name: Terraform Destroy
+      - name: Destroy ECS service
+        run: terraform destroy -target=aws_ecs_service.app -auto-approve
+
+      - name: Destroy managed listener rule
+        run: terraform destroy -target=aws_lb_listener_rule.app -auto-approve
+
+      - name: Remove stale listener rules for the target group
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          target_group_arn="$(terraform state show -no-color aws_lb_target_group.app \
+            | awk '$1 == "arn" && $2 == "=" { print $3; exit }')"
+
+          if [[ -z "$target_group_arn" ]]; then
+            echo "Target group is no longer in state; skipping stale-rule cleanup."
+            exit 0
+          fi
+
+          load_balancer_arns="$(aws elbv2 describe-target-groups \
+            --target-group-arns "$target_group_arn" \
+            --query 'TargetGroups[0].LoadBalancerArns[]' \
+            --output text)"
+
+          [[ "$load_balancer_arns" == "None" ]] && exit 0
+
+          for load_balancer_arn in $load_balancer_arns; do
+            listener_arns="$(aws elbv2 describe-listeners \
+              --load-balancer-arn "$load_balancer_arn" \
+              --query 'Listeners[].ListenerArn' \
+              --output text)"
+
+            [[ "$listener_arns" == "None" ]] && continue
+
+            for listener_arn in $listener_arns; do
+              while IFS= read -r rule_arn; do
+                [[ -z "$rule_arn" ]] && continue
+                echo "Deleting stale listener rule $rule_arn"
+                aws elbv2 delete-rule --rule-arn "$rule_arn"
+              done < <(
+                aws elbv2 describe-rules --listener-arn "$listener_arn" --output json \
+                  | jq -r --arg target_group_arn "$target_group_arn" '
+                    .Rules[]
+                    | select(.IsDefault | not)
+                    | select(any(.Actions[]?;
+                        .TargetGroupArn == $target_group_arn
+                        or any(.ForwardConfig.TargetGroups[]?;
+                            .TargetGroupArn == $target_group_arn)))
+                    | .RuleArn
+                  '
+              )
+            done
+          done
+
+      - name: Destroy remaining infrastructure
         run: terraform destroy -auto-approve
