@@ -65,7 +65,7 @@ jobs:
           set -euo pipefail
 
           target_group_arn="$(terraform state show -no-color aws_lb_target_group.app \
-            | awk '$1 == "arn" && $2 == "=" { print $3; exit }')"
+            | awk '$1 == "arn" && $2 == "=" { gsub(/^"|"$/, "", $3); print $3; exit }')"
 
           if [[ -z "$target_group_arn" ]]; then
             echo "Target group is no longer in state; skipping stale-rule cleanup."
