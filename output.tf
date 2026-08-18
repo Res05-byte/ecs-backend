@@ -15,6 +15,5 @@ output "task_definition_arn" {
 }
 
 output "application_url" {
-  description = "Browser URL for the application; listener wildcards are not part of URLs."
-  value       = "http://${data.aws_lb.platform.dns_name}${trimsuffix(var.path_pattern, "*")}"
+  value = "http://${data.aws_lb.platform.dns_name}${var.path_pattern}"
 }

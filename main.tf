@@ -57,6 +57,7 @@ resource "aws_ecr_repository" "app" {
   name         = var.app_name
   force_delete = true
 
+
   image_scanning_configuration {
     scan_on_push = true
   }
@@ -90,11 +91,9 @@ resource "aws_cloudwatch_log_group" "app" {
 
 resource "aws_lb_target_group" "app" {
 
-  # A port change forces target-group replacement. A generated name lets AWS
-  # hold the old and new groups at the same time while listener rules move.
-  name_prefix = "res-"
+  name = "${var.app_name}-tg"
 
-  port = var.target_group_port
+  port = var.container_port
 
   protocol = "HTTP"
 
@@ -106,13 +105,13 @@ resource "aws_lb_target_group" "app" {
 
     enabled = true
 
-    path = var.health_check_path
+    path = "/health"
 
     protocol = "HTTP"
 
     port = "traffic-port"
 
-    matcher = "200-399"
+    matcher = "200"
 
     healthy_threshold = 2
 
@@ -124,32 +123,11 @@ resource "aws_lb_target_group" "app" {
 
   }
 
-  lifecycle {
-    create_before_destroy = true
-  }
-
   tags = {
     Project = "CONC"
     Owner   = var.app_name
   }
 
-}
-
-########################################
-# ALB-to-ECS Security Group Access
-########################################
-
-# The task security group is shared. Permit only the ALB security group(s) to
-# reach this application's listener port.
-resource "aws_vpc_security_group_ingress_rule" "alb_to_app" {
-  for_each = toset(data.aws_lb.platform.security_groups)
-
-  security_group_id            = data.aws_security_group.ecs_sg.id
-  referenced_security_group_id = each.value
-  ip_protocol                  = "tcp"
-  from_port                    = var.container_port
-  to_port                      = var.container_port
-  description                  = "Allow ALB traffic to ${var.app_name}"
 }
 
 ########################################

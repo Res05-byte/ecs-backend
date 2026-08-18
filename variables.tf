@@ -18,18 +18,7 @@ variable "app_name" {
 }
 
 variable "container_port" {
-  type        = number
-  description = "Port exposed by the application container and ECS service."
-}
-
-variable "target_group_port" {
-  type        = number
-  description = "Port on which the ALB target group reaches registered ECS tasks."
-}
-
-variable "health_check_path" {
-  type        = string
-  description = "HTTP path the ALB calls to determine ECS target health."
+  type = number
 }
 
 variable "task_cpu" {
