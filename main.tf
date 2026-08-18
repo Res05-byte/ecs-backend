@@ -90,7 +90,9 @@ resource "aws_cloudwatch_log_group" "app" {
 
 resource "aws_lb_target_group" "app" {
 
-  name = "${var.app_name}-tg"
+  # A port change forces target-group replacement. A generated name lets AWS
+  # hold the old and new groups at the same time while listener rules move.
+  name_prefix = "res-"
 
   port = var.container_port
 
@@ -122,6 +124,10 @@ resource "aws_lb_target_group" "app" {
 
   }
 
+  lifecycle {
+    create_before_destroy = true
+  }
+
   tags = {
     Project = "CONC"
     Owner   = var.app_name
@@ -149,7 +155,7 @@ resource "aws_ecs_task_definition" "app" {
   container_definitions = jsonencode([
     {
 
-      name  = var.app_name
+      name = var.app_name
 
       image = "${aws_ecr_repository.app.repository_url}:${var.image_tag}"
 
