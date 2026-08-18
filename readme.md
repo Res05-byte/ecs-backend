@@ -8,6 +8,8 @@ use port `4000`.
 
 The ALB listener forwards `/reshma/*` to this backend target group. The health
 check calls `/reshma/health` on port `4000` and expects a `200`–`399` response.
+Terraform also permits inbound TCP `4000` to the ECS task security group only
+from the shared ALB's security group.
 
 ## Deploy
 

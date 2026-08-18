@@ -94,7 +94,7 @@ resource "aws_lb_target_group" "app" {
   # hold the old and new groups at the same time while listener rules move.
   name_prefix = "res-"
 
-  port = var.container_port
+  port = var.target_group_port
 
   protocol = "HTTP"
 
@@ -106,7 +106,7 @@ resource "aws_lb_target_group" "app" {
 
     enabled = true
 
-    path = "/reshma/health"
+    path = var.health_check_path
 
     protocol = "HTTP"
 
@@ -133,6 +133,23 @@ resource "aws_lb_target_group" "app" {
     Owner   = var.app_name
   }
 
+}
+
+########################################
+# ALB-to-ECS Security Group Access
+########################################
+
+# The task security group is shared. Permit only the ALB security group(s) to
+# reach this application's listener port.
+resource "aws_vpc_security_group_ingress_rule" "alb_to_app" {
+  for_each = toset(data.aws_lb.platform.security_groups)
+
+  security_group_id            = data.aws_security_group.ecs_sg.id
+  referenced_security_group_id = each.value
+  ip_protocol                  = "tcp"
+  from_port                    = var.container_port
+  to_port                      = var.container_port
+  description                  = "Allow ALB traffic to ${var.app_name}"
 }
 
 ########################################
