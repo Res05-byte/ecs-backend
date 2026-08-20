@@ -33,4 +33,4 @@ container and a frontend image. Route the ALB to nginx on port `80`, and have
 nginx proxy API requests to the backend container on port `4000`. That change
 also needs the frontend Dockerfile/nginx configuration and the image build and
 push workflow, none of which are present in this repository.
-completed v1
+completed v2
