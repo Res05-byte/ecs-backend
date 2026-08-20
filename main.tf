@@ -105,7 +105,7 @@ resource "aws_lb_target_group" "app" {
 
     enabled = true
 
-    path = "/reshma/health"
+    path = "/health"
 
     protocol = "HTTP"
 
